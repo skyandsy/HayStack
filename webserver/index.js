@@ -1,8 +1,8 @@
 var port = 8080;
-var express = require('express');
-    router = express();
+var express = require('express'),
+    router = express(),
     http = require('http'),
-    assert = require('assert')
+    assert = require('assert');
 
 // Query the directory
 var cassandra = require('cassandra-driver');
