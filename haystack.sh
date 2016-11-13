@@ -14,9 +14,11 @@ docker network create --subnet=172.18.0.0/16 sharednetwork
 docker build -t redis ./cache
 docker run --net sharednetwork --ip 172.18.0.11 -d --name redis -p 6379:6379 redis
 
-docker build -t cassandra ./directory
-docker run --net sharednetwork --ip 172.18.0.22 -d --name cassandra -p 7199:7199 -p 9042:9042 -p 9160:9160 -p 7001:7001 cassandra
+docker build -t cassndra ./directory
+docker run --net sharednetwork --ip 172.18.0.2 -d --name cassandra -p 7199:7199 -p 9042:9042 -p 9160:9160 -p 7001:7001 cassandra
 docker run -it --rm --net container:cassandra cassandra cqlsh
+# docker exec -d  cqlsh -f init_cassandra_tables.txt
+
 
 CREATE KEYSPACE test_keyspace WITH REPLICATION = 
 {'class': 'SimpleStrategy', 'replication_factor': 1};
@@ -36,8 +38,8 @@ INSERT INTO test_table (id, test_value) VALUES ('3', 'three');
 SELECT * FROM test_table;
 
 docker build -t webserver ./webserver
-docker run --net sharednetwork --ip 172.18.0.33 -d --name webserver -p 8080 webserver
+docker run --net sharednetwork --ip 172.18.0.3 -d --name webserver -p 8080 webserver
 
 docker build -t nginx ./nginx
-docker run --net sharednetwork --ip 172.18.0.44 -d --name nginx -p 80:80 --link webserver:webserver nginx
+docker run --net sharednetwork --ip 172.18.0.4 -d --name nginx -p 80:80 --link webserver:webserver nginx
 docker network connect sharednetwork nginx
