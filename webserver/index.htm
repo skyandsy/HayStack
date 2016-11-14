@@ -1,0 +1,23 @@
+<html>
+  <body>
+    <h3> Picture Upload: </h3>
+    Select a file to upload: <br />
+    <form action = "http://127.0.0.1:8080/pic_upload" method = "POST"
+      enctype = "multipart/form-data">
+      <input type = "file" name = "pic_name" /> <br />
+      <input type = "submit" value = "Upload File" />
+    </form>
+    <h3> Picture Show: </h3>
+    Select a file to show: <br />
+    <form action = "http://127.0.0.1:8080/pic_show" method = "GET">
+      Picture Name: <input type = "text" name = "pic_name" /> <br />
+      <input type = "submit" value = "Submit" />
+    </form>
+    <h3> Picture Delete: </h3>
+    Select a file to delete: <br />
+    <form action = "http://127.0.0.1:8080/pic_delete" method = "DELETE">
+      Picture Name: <input type = "text" name = "pic_name" /> <br />
+      <input type = "submit" value = "Submit" />
+    </form>
+  </body>
+</html>
