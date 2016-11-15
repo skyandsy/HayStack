@@ -1,0 +1,14 @@
+[Unit]
+Description = HayStack Web Server
+
+[Service]
+ExecStart = /HayStack/webserver/test.js
+Restart = always
+User = nobody
+Group = nobody
+Environment = PATH = /usr/bin:/usr/local/bin
+Environment = NODE_ENV = production
+WorkingDirectory = /HayStack/webserver
+
+[Install]
+WantedBy = multi-user.target
