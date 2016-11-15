@@ -1,9 +1,12 @@
-FROM nodesource/jessie:0.12.7
+FROM java:8u111-jdk
 
-# cache package.json and node_modules to speed up builds
-ADD package.json package.json
-RUN npm install
+# install nodejs
+RUN apt-get install python-software-properties
+RUN curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+RUN apt-get install nodejs
 
-# Add your source files
-ADD . .
-CMD ["npm","start"]
+# test nodejs
+RUN mkdir /src && \
+    mkdir /src/webserver
+COPY ["test.js", "/src/webserver/"]
+RUN node /src/webserver/test.js
