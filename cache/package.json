@@ -9,6 +9,6 @@
   "dependencies": {
     "express": "^4.12.3",
     "redis": "^0.12.1",
-    "cassandra-driver": "1.0.0"
+    "http": "^1.1"
   }
 }
