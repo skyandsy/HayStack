@@ -25,15 +25,15 @@ app.post('/:pId/:vId/:offset/:datalength', function (req, res) {
 
 });
 
-app.get('/mid/:mId/vid/:vId/pid/:pId', function (req, res) {
+app.get('/mid/:mId/vid/:vId/pid/:pId', function (req, response) {
 	var mId = req.params.mId;
   	var vId = req.params.vId;
     var pId = req.params.pId; 
   
   	redis_client.get(pId+' photo', function(err, reply) {
 	    if (reply) {
-		    res.setHeader('Content-Type', 'image/jpeg');
-			res.end(new Buffer(reply, 'base64'));
+		    response.setHeader('Content-Type', 'image/jpeg');
+			response.end(new Buffer(reply, 'base64'));
 	    } else {
 	        redis_client.hgetall(pId + ' meta', function(err, object) {
 			    console.log(object);
@@ -47,35 +47,31 @@ app.get('/mid/:mId/vid/:vId/pid/:pId', function (req, res) {
                 // An object of options to indicate where to post to
                 var post_options = {
                     host: '172.18.0.3',
-                port: 8080,
-                path: '/' + vId + '/' + offset + '/' + datalength,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(postData)
-                }
+                    port: 8080,
+                    path: '/' + vId + '/' + offset + '/' + datalength,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Length': Buffer.byteLength(postData)
+                    }
                 };
 
                 // Set up the request
                 var post_req = http.request(post_options, function(res) {
                     res.setEncoding('utf8');
-                    res.on('data', function (chunk) {
-                        console.log('Response: ' + chunk);
-                    });
                     var body = new Stream();
                     res.on('data', function (chunk) {
                         body.push(chunk);
                     });
                     res.on('end', function () {
                         console.log('No more data in response.');
-                        res.setHeader('Content-Type', 'image/jpeg');
-                        res.end(new Buffer(body, 'base64'));
-                    });
-                    req.on('error', function(e) {
-                        console.log('problem with request: ' + e.message);
+                        response.setHeader('Content-Type', 'image/jpeg');
+                        response.end(new Buffer(body, 'base64'));
                     });
                 });
-
+                post_req.on('error', function(e) {
+                    console.log('problem with request: ' + e.message);
+                });
                 // post the data
                 post_req.write(post_data);
                 post_req.end();
