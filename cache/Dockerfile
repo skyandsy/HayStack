@@ -1,5 +1,3 @@
-
-# Set the base image to Ubuntu
 FROM node:7.0.0
 
 # Update the repository and install Redis Server
