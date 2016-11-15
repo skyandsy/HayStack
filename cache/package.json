@@ -1,0 +1,14 @@
+{
+  "name": "redisserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.12.3",
+    "redis": "^0.12.1",
+    "cassandra-driver": "1.0.0"
+  }
+}
