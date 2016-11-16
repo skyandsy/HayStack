@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var multer = require('multer');
 var upload = multer({dest:'tmp/'});
 var crypto = require('crypto');
+var fs = require('fs');
 
 const LISTENPORT = 8080;
 const REDISPORT = 8080;
@@ -89,6 +90,11 @@ console.log('Finishing cassandra table initializatoin...');
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
 
+function imageType(name){
+	var arr = name.split('.');
+	return arr[arr.length-1];
+}
+
 // Show page
 app.get('/index.htm', function(req, res){
 	res.sendFile(__dirname+'/'+'index.htm');
@@ -99,6 +105,7 @@ app.get('/pic_show', function(req, res){
 	console.log('Getting a picture...');
 	console.log(req);
 
+	var pname = req.query.pic_name;
 	var pid = crypto.createHash('md5').update(req.query.pic_name).digest('hex');
 
 	console.log('Get logical volume id...');
@@ -124,15 +131,20 @@ app.get('/pic_show', function(req, res){
 					path: '/:1/:'+pic.logVol+'/:'+pid
 				};
 
-				var getReq = http.request(options, function(res){
-					console.log('STATUS: ${res.statusCode}$');
-					console.log('HEADER: ${JSON.stringify(res.headers)}$');
+				var getReq = http.request(options, function(response){
+					console.log('STATUS: ${response.statusCode}$');
+					console.log('HEADER: ${JSON.stringify(response.headers)}$');
 
-					res.setEncoding('utf8');
-					res.on('data', function(chunk) {
+					response.setEncoding('utf8');
+					response.on('data', function(chunk) {
 						console.log('Response: '+chunk);
+						res.writeHead(200, {'Content-Type': 'text/html'});
+						res.end("<html><body>"+
+							"<img src =\"data:image/"+imageType(pname)+
+							";base64,"+chunk+"\"/>"+
+							"</body></html>");
 					});
-					res.on('end', function(){
+					response.on('end', function(){
 						console.log('No more data in response.');
 					});
 				});
@@ -164,6 +176,12 @@ app.get('/pic_delete', function(req, res){
                 } else {
                 	console.log('Picture name: %s, logVol: %s.',
                         	req.query.pic_name, pic.logVol);
+
+			models.instance.Picmap.delete({keyID: pid}, function(err){
+				if (err) throw err;
+				else console.log('Deleted the picture from directory!');
+			});
+
                 	models.instance.Volmap.findOne({logVol: pic.logVol}, function(err, vol){
                         	if (err) throw err;
                         	console.log('phyVol: %s.', vol.phyVol);
@@ -177,9 +195,11 @@ app.get('/pic_delete', function(req, res){
                                         path: '/:1/:'+pic.logVol+'/:'+pid
                                 };
 
-                                var deleteReq = http.request(options, function(res){
-                                        console.log('STATUS: ${res.statusCode}$');
-                                        console.log('HEADER: ${JSON.stringify(res.headers)}$');
+                                var deleteReq = http.request(options, function(response){
+                                        console.log('STATUS: ${response.statusCode}$');
+                                        console.log('HEADER: ${JSON.stringify(response.headers)}$');
+
+					res.end('Successfully deleted the picture!');
                                 });
 
                                 deleteReq.on('error', function(err){
@@ -187,7 +207,6 @@ app.get('/pic_delete', function(req, res){
                                 });
 
                                 deleteReq.end();
-		
                 	});
 		}
         });
@@ -203,28 +222,54 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 	models.instance.Volmap.findOne({empSize: {'$gte': req.file.size}},
 		{allow_filtering: true}, function(err, vol){
 		if (err) throw err;
-		console.log('Store picture to volume %s.', vol.logVol);
 
-		var newSize = vol.empSize-req.file.size;
-		models.instance.Volmap.update({logVol: vol.logVol}, {empSize: newSize},function(err){
-			if (err) throw err;
-			else console.log('Updated Volmap: logVol: %s, empSize: %s.',
-				vol.logVol, newSize);
-		});
+		if (vol == 'undefined'){
+			console.log('Stores are full!');
+			res.end('Stores are full!');
+		} else {
+
+			console.log('Store picture to volume %s.', vol.logVol);
+
+			var newSize = vol.empSize-req.file.size;
+			models.instance.Volmap.update({logVol: vol.logVol}, {empSize: newSize},function(err){
+				if (err) throw err;
+				else console.log('Updated Volmap: logVol: %s, empSize: %s.',
+					vol.logVol, newSize);
+			});
 		
-		var entry = new models.instance.Picmap({keyID: pid, logVol: vol.logVol});
-		entry.save(function(err){
-			if (err) throw err;
-			else console.log('Insert to Picmap: keyID: %s, logVol: %s.',
-				pid, vol.logVol);
-		});
+			var entry = new models.instance.Picmap({keyID: pid, logVol: vol.logVol});
+			entry.save(function(err){
+				if (err) throw err;
+				else console.log('Insert to Picmap: keyID: %s, logVol: %s.',
+					pid, vol.logVol);
+			});
 
-		//Build new URL...
-		var url = 'http://'+vol.logVol+'/upload';
-		console.log('Redirect to %s.', url);		
+			console.log('Uploading picture to cache...')	
+			var postData = fs.readFileSync('tmp/'+pid, {encoding: 'base64'});
+			var options = {
+				host: STOREID,
+				port: STOREPORT,
+				method: 'GET',
+				path: '/upload/'+pid+'/'+vol.logVol,
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Content-Length': Buffer.byteLength(postData)
+				}
+			}
+
+			var postReq = http.request(options, function(response){
+				console.log('Upload secceed!');
+				res.end('Upload secceed!');
+			});
+
+			postReq.on('error', function(err){
+				console.log('Problem with request: '+err.message);
+			});
+
+			postReq.write(postData);
+			postReq.end();
+		}	
 	});
-
-	res.end('UPLOAD succeed!');
 });
 
 var server = app.listen(LISTENPORT, function(){
