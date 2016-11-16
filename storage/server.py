@@ -17,38 +17,25 @@ class   PostHandler(BaseHTTPRequestHandler):
             pId=path[2]
             volumeId=path[3]
 
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={'REQUEST_METHOD':'POST',
-                         'CONTENT_TYPE':self.headers['Content-Type'],
-                         }
-            )
+            content_len = int(self.headers.getheader('content-length', 0))
+            post_body = self.rfile.read(content_len)
             self.send_response(200)
             self.end_headers()
             self.wfile.write('%s ' % str(pId) ) ##pid
             self.wfile.write('%s ' % str(volumeId)) ##volumdId
             if(os.path.isfile(volumeId)):
                 self.wfile.write('%s '%os.path.getsize(volumeId))#offset
-                texts=[str(pId),str(volumeId),str(os.path.getsize(volumeId)),"0"]
+                texts=[str(pId),str(volumeId),str(os.path.getsize(volumeId)),str(content_len)]
             else: #file not exists
                 self.wfile.write('%s '%str(0))
-                texts=[str(pId),str(volumeId),"0","0"]
-            for field in form.keys():
-                field_item = form[field]
-                filevalue  = field_item.value
-                filesize = len(filevalue)
-                self.wfile.write('%s'%str(filesize))
-                texts[3]=str(filesize)
-                print len(filevalue)
-                with open(volumeId,'a') as f:
-                    f.write(filevalue)
-
+                texts=[str(pId),str(volumeId),"0",str(content_len)]
+            self.wfile.write('%s'%str(filesize))
+            with open(volumeId,'a') as f:
+                f.write(post_body)
             ##tell the redis
             cacheUrl= 'http://172.18.0.2:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
             r = requests.get(cacheUrl)
             return
-
     #https://github.com/tanzilli/playground/blob/master/python/httpserver/example2.py
         elif(path[1]=='download'):
             volumeId=path[2]
