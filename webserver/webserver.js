@@ -1,15 +1,18 @@
 var express = require('express');
 var app = express();
+var http = require('http');
 var bodyParser = require('body-parser');
 var multer = require('multer');
 var upload = multer({dest:'tmp/'});
 var crypto = require('crypto');
 
-const HTTPPORT = 8080;
+const LISTENPORT = 8080;
+const REDISPORT = 8080;
+const STOREPORT = 8080;
 const CASSANDRAPORT = 9042;
 const CASSANDRAIP = '127.0.0.1';
-const STOREIP = '172.18.0.3:8080';
-const REDISIP = '172.18.0.2:8080';
+const STOREIP = '172.18.0.3';
+const REDISIP = '172.18.0.2';
 const VOLSIZE = 1048576;
 
 // Create cassandra client
@@ -95,23 +98,53 @@ app.get('/index.htm', function(req, res){
 app.get('/pic_show', function(req, res){
 	console.log('Getting a picture...');
 	console.log(req);
-	console.log('Get logical volume id...');
+
 	var pid = crypto.createHash('md5').update(req.query.pic_name).digest('hex');
+
+	console.log('Get logical volume id...');
 	models.instance.Picmap.findOne({keyID: pid}, function(err, pic){
 		if (err) throw err;
-		console.log('Picture name: %s, logVol: %s.', 
-			req.query.pic_name, pic.logVol);
-		models.instance.Volmap.findOne({logVol: pic.logVol}, function(err, vol){
-			if (err) throw err;
-			console.log('phyVol: %s.', vol.phyVol);
 
-			// Build new URL and redirect
-			var url = 'http://'+vol.phyVol+'/get/:'+1+'/:'+pic.logVol+'/:'+pid;
-			console.log('Redirect to %s.', url);
-		});
+		if (typeof pic == 'undefined'){
+			console.log('Picture does not exist!');
+			res.end('Picture does not exist!');
+		} else {
+			console.log('Picture name: %s, logVol: %s.', 
+				req.query.pic_name, pic.logVol);
+			models.instance.Volmap.findOne({logVol: pic.logVol}, function(err, vol){
+				if (err) throw err;
+				console.log('phyVol: %s.', vol.phyVol);
+
+				// Connect with redis server
+				console.log('Get the picture from REDIS server...');
+				var options = {
+					port: REDISPORT,
+					hostname: REDISIP,
+					method: 'GET',
+					path: '/:1/:'+pic.logVol+'/:'+pid
+				};
+
+				var getReq = http.request(options, function(res){
+					console.log('STATUS: ${res.statusCode}$');
+					console.log('HEADER: ${JSON.stringify(res.headers)}$');
+
+					res.setEncoding('utf8');
+					res.on('data', function(chunk) {
+						console.log('Response: '+chunk);
+					});
+					res.on('end', function(){
+						console.log('No more data in response.');
+					});
+				});
+
+				getReq.on('error', function(err){
+					console.log('GET REQUEST ERROR: ${err.message}$');
+				});
+
+				getReq.end();
+			});
+		}
 	});
-
-	res.end('GET succeed!');
 });
 
 // Request to delete a picture by picture name
@@ -119,22 +152,45 @@ app.get('/pic_delete', function(req, res){
 	console.log('Deleting a picture');
 	console.log(req);
         console.log('Get logical volume id...');
+
         var pid = crypto.createHash('md5').update(req.query.pic_name).digest('hex');
-        models.instance.Picmap.findOne({keyID: pid}, function(err, pic){
+        
+	models.instance.Picmap.findOne({keyID: pid}, function(err, pic){
                 if (err) throw err;
-                console.log('Picture name: %s, logVol: %s.',
-                        req.query.pic_name, pic.logVol);
-                models.instance.Volmap.findOne({logVol: pic.logVol}, function(err, vol){
-                        if (err) throw err;
-                        console.log('phyVol: %s.', vol.phyVol);
 
-                        // Build new URL and redirect
-                        var url = 'http://'+vol.phyVol+'/delete/:'+1+'/:'+pic.logVol+'/:'+pid;
-                        console.log('Redirect to %s.', url);
-                });
+		if (typeof pic == 'undefined'){
+                        console.log('Picture does not exist!');
+                        res.end('Picture does not exist!');
+                } else {
+                	console.log('Picture name: %s, logVol: %s.',
+                        	req.query.pic_name, pic.logVol);
+                	models.instance.Volmap.findOne({logVol: pic.logVol}, function(err, vol){
+                        	if (err) throw err;
+                        	console.log('phyVol: %s.', vol.phyVol);
+
+			 	// Connect with redis server
+                                console.log('Deleting the picture from REDIS server...');
+                                var options = {
+                                        port: REDISPORT,
+                                        hostname: REDISIP,
+                                        method: 'DELETE',
+                                        path: '/:1/:'+pic.logVol+'/:'+pid
+                                };
+
+                                var deleteReq = http.request(options, function(res){
+                                        console.log('STATUS: ${res.statusCode}$');
+                                        console.log('HEADER: ${JSON.stringify(res.headers)}$');
+                                });
+
+                                deleteReq.on('error', function(err){
+                                        console.log('DELETE REQUEST ERROR: ${err.message}$');
+                                });
+
+                                deleteReq.end();
+		
+                	});
+		}
         });
-
-	res.end('DELETE succeed!');
 });
 
 // Request to upload a picture
@@ -171,7 +227,7 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 	res.end('UPLOAD succeed!');
 });
 
-var server = app.listen(HTTPPORT, function(){
+var server = app.listen(LISTENPORT, function(){
 	var host = server.address().address;
 	var port = server.address().port;
 	console.log('Server listening at http://%s:%s', host, port);
