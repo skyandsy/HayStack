@@ -7,12 +7,12 @@ var upload = multer({dest:'tmp/'});
 var crypto = require('crypto');
 var fs = require('fs');
 
-const LISTENPORT = 8081;
+const LISTENPORT = 8080;
 const REDISPORT = 8080;
 const STOREPORT = 8080;
 const CASSANDRAPORT = 9042;
 const CASSANDRAIP = '127.0.0.1';
-const STOREIP = '127.0.0.1';//'172.18.0.3';
+const STOREIP = '172.18.0.3';
 const REDISIP = '172.18.0.2';
 const VOLSIZE = 1048576;
 
