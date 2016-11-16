@@ -19,6 +19,10 @@ docker run --net sharednetwork --ip 172.18.0.2 -d --name cassandra -p 7199:7199 
 docker run -it --rm --net container:cassandra cassandra cqlsh
 # docker exec -d  cqlsh -f init_cassandra_tables.txt
 
+#storage 172.18.0.3
+#docker build -t storage ./storage
+#docker run -d --net sharednetwork --ip 172.18.0.3 --name storage python server.py
+
 
 CREATE KEYSPACE test_keyspace WITH REPLICATION = 
 {'class': 'SimpleStrategy', 'replication_factor': 1};
