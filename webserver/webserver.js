@@ -7,12 +7,12 @@ var upload = multer({dest:'tmp/'});
 var crypto = require('crypto');
 var fs = require('fs');
 
-const LISTENPORT = 8080;
+const LISTENPORT = 8081;
 const REDISPORT = 8080;
 const STOREPORT = 8080;
 const CASSANDRAPORT = 9042;
 const CASSANDRAIP = '127.0.0.1';
-const STOREIP = '172.18.0.3';
+const STOREIP = '127.0.0.1';//'172.18.0.3';
 const REDISIP = '172.18.0.2';
 const VOLSIZE = 1048576;
 
@@ -128,7 +128,7 @@ app.get('/pic_show', function(req, res){
 					port: REDISPORT,
 					hostname: REDISIP,
 					method: 'GET',
-					path: '/:1/:'+pic.logVol+'/:'+pid
+					path: '/1/'+pic.logVol+'/'+pid
 				};
 
 				var getReq = http.request(options, function(response){
@@ -215,6 +215,7 @@ app.get('/pic_delete', function(req, res){
 // Request to upload a picture
 app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 	console.log('Uploading a picture...');
+	console.log(req.file);
 
 	var pid = crypto.createHash('md5').update(req.file.originalname).digest('hex');
 
@@ -245,9 +246,9 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 			});
 
 			console.log('Uploading picture to cache...')	
-			var postData = fs.readFileSync('tmp/'+pid, {encoding: 'base64'});
+			var postData = fs.readFileSync('tmp/'+req.file.filename, {encoding: 'base64'});
 			var options = {
-				host: STOREID,
+				host: STOREIP,
 				port: STOREPORT,
 				method: 'GET',
 				path: '/upload/'+pid+'/'+vol.logVol,
