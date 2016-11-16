@@ -21,7 +21,7 @@ docker run -it --rm --net container:cassandra cassandra cqlsh
 
 #storage 172.18.0.3
 #docker build -t storage ./storage
-#docker run -d --net sharednetwork --ip 172.18.0.3 --name storage python server.py
+#docker run -d --net sharednetwork --ip 172.18.0.3 --name storage storage python server.py
 
 
 CREATE KEYSPACE test_keyspace WITH REPLICATION = 
