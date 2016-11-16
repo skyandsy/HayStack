@@ -44,7 +44,7 @@ class   PostHandler(BaseHTTPRequestHandler):
                     f.write(filevalue)
 
             ##tell the redis
-            cacheUrl= 'http://localhost:8001/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
+            cacheUrl= 'http://172.18.0.2:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
             r = requests.get(cacheUrl)
             return
 
@@ -68,6 +68,6 @@ class   PostHandler(BaseHTTPRequestHandler):
     
 if __name__=='__main__':
     from BaseHTTPServer import HTTPServer
-    sever = HTTPServer(('localhost',8080),PostHandler)
+    sever = HTTPServer(('localhost',8080),PostHandler)#172.18.0.3
     print 'Starting server, use <Ctrl-C> to stop'
     sever.serve_forever() 

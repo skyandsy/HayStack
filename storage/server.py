@@ -2,6 +2,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 import cgi
 import os
 import requests
+import base64
 
 class   PostHandler(BaseHTTPRequestHandler):
     def load_binary(file):
