@@ -1,6 +1,8 @@
 from BaseHTTPServer import BaseHTTPRequestHandler
 import cgi
 import os
+import requests
+import base64
 
 class   PostHandler(BaseHTTPRequestHandler):
     def load_binary(file):
@@ -26,15 +28,25 @@ class   PostHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('%s ' % str(pId) ) ##pid
             self.wfile.write('%s ' % str(volumeId)) ##volumdId
-            self.wfile.write('%s '%os.path.getsize(volumeId))#offset
+            if(os.path.isfile(volumeId)):
+                self.wfile.write('%s '%os.path.getsize(volumeId))#offset
+                texts=[str(pId),str(volumeId),str(os.path.getsize(volumeId)),"0"]
+            else: #file not exists
+                self.wfile.write('%s '%str(0))
+                texts=[str(pId),str(volumeId),"0","0"]
             for field in form.keys():
                 field_item = form[field]
                 filevalue  = field_item.value
                 filesize = len(filevalue)
                 self.wfile.write('%s'%str(filesize))
+                texts[3]=str(filesize)
                 print len(filevalue)
                 with open(volumeId,'a') as f:
                     f.write(filevalue)
+
+            ##tell the redis
+            cacheUrl= 'http://172.18.0.2:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
+            r = requests.get(cacheUrl)
             return
 
     #https://github.com/tanzilli/playground/blob/master/python/httpserver/example2.py
@@ -57,6 +69,6 @@ class   PostHandler(BaseHTTPRequestHandler):
     
 if __name__=='__main__':
     from BaseHTTPServer import HTTPServer
-    sever = HTTPServer(('localhost',8080),PostHandler)
+    sever = HTTPServer(('localhost',8080),PostHandler)#172.18.0.3
     print 'Starting server, use <Ctrl-C> to stop'
     sever.serve_forever() 

@@ -27,8 +27,7 @@ def uploadImage(filePath,pid,volumeId):
     files = {'file': open(filePath, 'rb')}  
     r = requests.get(FSUrl, files=files)
     texts=r.text.split(' ')
-    cacheUrl= 'http://localhost:8001/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
-    r = requests.get(cacheUrl)
+
 
 
 
