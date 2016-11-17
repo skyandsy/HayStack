@@ -9,7 +9,7 @@ class   PostHandler(BaseHTTPRequestHandler):
         with open(file, 'rb') as file:
             return file.read()
 
-    def do_GET(self):
+    def do_POST(self):
         path=self.path.split('/')
 
         print path
