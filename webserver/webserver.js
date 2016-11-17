@@ -135,19 +135,21 @@ app.get('/pic_show', function(req, res){
 				};
 
 				var getReq = http.request(options, function(response){
-					console.log('STATUS: ${response.statusCode}$');
-					console.log('HEADER: ${JSON.stringify(response.headers)}$');
+					console.log('STATUS: %s', response.statusCode);
+					console.log('HEADER:%s',JSON.stringify(response.headers));
 
-					response.setEncoding('utf8');
+					var data = '';
+					//response.setEncoding('utf8')ST;
 					response.on('data', function(chunk) {
-						console.log('Response: '+chunk);
+						//console.log('Response: '+chunk);
+						data += chunk;
+					});
+					response.on('end', function(){
 						res.writeHead(200, {'Content-Type': 'text/html'});
 						res.end("<html><body>"+
 							"<img src =\"data:image/"+imageType(pname)+
-							";base64,"+chunk+"\"/>"+
+							";base64,"+data+"\"/>"+
 							"</body></html>");
-					});
-					response.on('end', function(){
 						console.log('No more data in response.');
 					});
 				});
@@ -199,8 +201,8 @@ app.get('/pic_delete', function(req, res){
                                 };
 
                                 var deleteReq = http.request(options, function(response){
-                                        console.log('STATUS: ${response.statusCode}$');
-                                        console.log('HEADER: ${JSON.stringify(response.headers)}$');
+                                        console.log('STATUS: %s',response.statusCode);
+                                        console.log('HEADER:%s',JSON.stringify(response.headers));
 
 					res.end('Successfully deleted the picture!');
                                 });

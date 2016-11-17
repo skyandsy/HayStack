@@ -3,6 +3,7 @@ import cgi
 import os
 import requests
 import base64
+import sys
 
 class   PostHandler(BaseHTTPRequestHandler):
     def load_binary(file):
@@ -25,18 +26,29 @@ class   PostHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('%s ' % str(pId) ) ##pid
             self.wfile.write('%s ' % str(volumeId)) ##volumdId
+
+            print("=====1") 
+
             if(os.path.isfile(volumeId)):
+                print("=====2")
+
                 self.wfile.write('%s '%os.path.getsize(volumeId))#offset
                 texts=[str(pId),str(volumeId),str(os.path.getsize(volumeId)),str(content_len)]
             else: #file not exists
+                print("=====3")
+
                 self.wfile.write('%s '%str(0))
                 texts=[str(pId),str(volumeId),"0",str(content_len)]
             self.wfile.write('%s'%str(content_len))
             with open(volumeId,'a') as f:
                 f.write(post_body)
+            print("=====4")
+
             ##tell the redis
-            cacheUrl= 'http://172.18.0.12:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
-            r = requests.get(cacheUrl)
+            cacheUrl= 'http://172.18.0.12:8080/'+texts[0]+'/'+texts[1]+'/'+texts[2]+'/'+texts[3]
+            print( cacheUrl)
+            r = requests.post(cacheUrl)
+            print(r.text)
             return
     #https://github.com/tanzilli/playground/blob/master/python/httpserver/example2.py
         elif(path[1]=='download'):

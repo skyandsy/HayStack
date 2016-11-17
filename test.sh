@@ -6,8 +6,8 @@ docker network rm isolatenw
 
 echo ==========Build images==========
 #docker build -t nodejsimg nodejs/
-#docker build -t webserverimg webserver/
-#docker build -t storageimg storage/
+docker build -t webserverimg webserver/
+docker build -t storageimg storage/
 docker build -t redisimg redis/
 docker build -t cacheimg cache/
 
@@ -22,8 +22,8 @@ docker run -d --net isolatenw --ip 172.18.0.12 --name cache --link redis:redis c
 
 docker run -d --net isolatenw --ip 172.18.0.13 --name storage storageimg python server.py
 
-docker run -d --net isolatenw --ip 172.18.0.11 --name webserver -p 8080:8080 webserverimg 
-sleep 30s
+ docker run -d --net isolatenw --ip 172.18.0.11 --name webserver -p 8080:8080 webserverimg 
+sleep 20s
 docker exec webserver nodejs /HayStack/webserver/webserver.js
 
 #echo ==========Remove containers==========

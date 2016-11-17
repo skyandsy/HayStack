@@ -41,7 +41,7 @@ app.post('/:pId/:vId/:offset/:datalength', function (req, res) {
 		'offset': '' + offset,
 		'datalength': '' + datalength
 	});
-
+	res.end();
 });
 app.get('/', function (req, res) {
     res.end('send a string');
@@ -57,7 +57,7 @@ app.get('/:mId/:vId/:pId', function (req, responseToDir) {
 	    if (reply) {
             console.log('Cache hits, found the photo');
 		    responseToDir.setHeader('Content-Type', 'image/jpeg');
-			responseToDir.end(new Buffer(reply, 'base64'));
+			responseToDir.end(reply);
 	    } else {
             console.log('Cache misses, photo not found');
 	        redis_client.hgetall(pId + '&meta', function(err, metadata) {
@@ -92,9 +92,9 @@ app.get('/:mId/:vId/:pId', function (req, responseToDir) {
                         resFromStore.on('end', function () {
                             console.log('No more data in response.');
                             responseToDir.setHeader('Content-Type', 'image/jpeg');
-                            responseToDir.end(new Buffer(body, 'base64'));
+                            responseToDir.end(body);
                             // encode into base64
-                            redis_client.setex(pId + '&photo', 60, new Buffer(body).toString('base64'));
+                            redis_client.setex(pId + '&photo', 60, body);
                         });
                     });
                     post_req.on('error', function(e) {
@@ -117,6 +117,7 @@ app.delete('/:mId/:vId/:pId', function (req, res) {
   	redis_client.del(pId + '&photo', function(err, reply) {	    
 		console.log(reply);
 	});
+	res.end();
 });
 
 var server = app.listen(LISTENPORT, function(){
