@@ -12,8 +12,8 @@ const REDISPORT = 8080;
 const STOREPORT = 8080;
 const CASSANDRAPORT = 9042;
 const CASSANDRAIP = '127.0.0.1';
-const STOREIP = '172.18.0.3';
-const REDISIP = '172.18.0.2';
+const STOREIP = '172.18.0.13';
+const REDISIP = '172.18.0.12';
 const VOLSIZE = 1048576;
 
 // Create cassandra client
@@ -67,6 +67,7 @@ models.connect(function(err){
 	else console.log('Successfully connecting to cassandra...');
 });
 
+setTimeout(function(){
 // Create mapping table: logical volume <-> physical volume
 console.log('Creating logical volume <-> physical volume...');
 var entry = new models.instance.Volmap({
@@ -86,6 +87,8 @@ entry.save(function(err){
 		STOREIP, VOLSIZE);
 });
 console.log('Finishing cassandra table initializatoin...');
+}, 10000);
+
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
@@ -250,7 +253,7 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 			var options = {
 				host: STOREIP,
 				port: STOREPORT,
-				method: 'GET',
+				method: 'POST',
 				path: '/upload/'+pid+'/'+vol.logVol,
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
@@ -264,6 +267,7 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 			});
 
 			postReq.on('error', function(err){
+				throw err;
 				console.log('Problem with request: '+err.message);
 			});
 
@@ -272,7 +276,6 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 		}	
 	});
 });
-
 var server = app.listen(LISTENPORT, function(){
 	var host = server.address().address;
 	var port = server.address().port;

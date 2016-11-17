@@ -8,12 +8,23 @@ class   PostHandler(BaseHTTPRequestHandler):
     def load_binary(file):
         with open(file, 'rb') as file:
             return file.read()
-
+	
     def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write("<html><head><title>WoW</title></head>")
+        self.wfile.write("<body><p>This is a Total Wowness</p>")
+        self.wfile.write("</body></html>")
+        return 
+
+    def do_POST(self):
         path=self.path.split('/')
 
         print path
         if(path[1]=='upload'):
+            print "=========receive upload request========="
+
             pId=path[2]
             volumeId=path[3]
 
@@ -29,15 +40,16 @@ class   PostHandler(BaseHTTPRequestHandler):
             else: #file not exists
                 self.wfile.write('%s '%str(0))
                 texts=[str(pId),str(volumeId),"0",str(content_len)]
-            self.wfile.write('%s'%str(filesize))
+            self.wfile.write('%s'%str(content_len))
             with open(volumeId,'a') as f:
                 f.write(post_body)
             ##tell the redis
-            cacheUrl= 'http://172.18.0.2:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
+            cacheUrl= 'http://172.18.0.12:8080/'+texts[0]+"/"+texts[1]+"/"+texts[2]+"/"+texts[3]
             r = requests.get(cacheUrl)
             return
     #https://github.com/tanzilli/playground/blob/master/python/httpserver/example2.py
         elif(path[1]=='download'):
+            print "=========receive download request========="
             volumeId=path[2]
             offset=int(path[3])
             fileLen=int(path[4])
@@ -56,6 +68,6 @@ class   PostHandler(BaseHTTPRequestHandler):
     
 if __name__=='__main__':
     from BaseHTTPServer import HTTPServer
-    sever = HTTPServer(('localhost',8080),PostHandler)#172.18.0.3
+    sever = HTTPServer(('0.0.0.0',8080),PostHandler)#172.18.0.13
     print 'Starting server, use <Ctrl-C> to stop'
     sever.serve_forever() 
