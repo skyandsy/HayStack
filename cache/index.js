@@ -1,14 +1,21 @@
 const LISTENPORT = 8080;
-const STOREPORT = 8080;
-const STOREIP = '172.18.0.3';//'172.18.0.3';
-const PORT = 6379;
+
+// local test
+const STOREPORT = 8081;
+const STOREIP = '127.0.0.1';
+
+// docker test
+// const STOREIP = '127.18.0.3';
+// const STOREPORT = 8080;
 var express = require('express'),
 	app = express(),
     http = require('http'),
     redis = require('redis'),
     querystring = require('querystring');
 
-var redis_client =  redis.createClient(PORT);
+// var redis_client =  redis.createClient('6379', 'redis');
+
+var redis_client =  redis.createClient('6379');
 redis_client.on('connect', function() {
     console.log('Redis connected');
 });
@@ -54,31 +61,27 @@ app.get('/:mId/:vId/:pId', function (req, responseToDir) {
                     
                     // Build the post metadata from an object
                     // Send this metadata to Store
-                    var postData = querystring.stringify({
-                         'vid': '' + metadata.vId,
-                         'offset': '' + metadata.offset,
-                         'datalength': '' + metadata.datalength
-                    });
+                    var postData = metadata.vId + '/' + metadata.offset + '/' + metadata.datalength;
                     console.log('Cache sends Store metadata: ' + postData);
 
                     
                     var post_options = {
                         host: STOREIP,
                         port: STOREPORT,
-                        path: '/' + postData.vId + '/' + postData.offset + '/' + postData.datalength,
+                        path: '/download/' + postData,
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Content-Type': 'text/plain',
                             'Content-Length': Buffer.byteLength(postData)
                         }
                     };
 
                     // Set up the request
                     var post_req = http.request(post_options, function(resFromStore) {
-                        resFromStore.setEncoding('utf8');
-                        var body = new Stream();
+                       // resFromStore.setEncoding('utf8');
+                        var body = '';
                         resFromStore.on('data', function (chunk) {
-                            body.push(chunk);
+                            body += chunk;
                         });
                         resFromStore.on('end', function () {
                             console.log('No more data in response.');
