@@ -1,0 +1,5 @@
+docker build -t redis ./redis
+docker run --net sharednetwork --ip 172.18.0.4 -d --name redis -p 6379:6379 redis
+
+docker build -t cache ./cache
+docker run --net sharednetwork --ip 172.18.0.2 -d --name cache -p 8080 --link redis:redis cache

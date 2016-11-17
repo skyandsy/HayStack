@@ -1,18 +1,11 @@
-FROM node:7.0.0
+FROM node:slim
+RUN npm install express && \
+	npm install http && \
+	npm install redis && \
+	npm install cassandra-driver
+ADD . .
 
 # Update the repository and install Redis Server
-RUN         apt-get update && apt-get install -y redis-server
+RUN apt-get update
 
-# Expose Redis port 6379
-EXPOSE      6379
-
-# Run Redis Server
-ENTRYPOINT  ["/usr/bin/redis-server"]
-
-# cache package.json and node_modules to speed up builds
-ADD package.json package.json
-RUN npm install
-
-# Add your source files
-ADD . .
 CMD ["npm","start"]
