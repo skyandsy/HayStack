@@ -5,7 +5,7 @@ const LISTENPORT = 8080;
 // const STOREIP = '127.0.0.1';
 
 // docker test
-const STOREIP = '127.18.0.3';
+const STOREIP = '172.18.0.13';
 const STOREPORT = 8080;
 var express = require('express'),
 	app = express(),
