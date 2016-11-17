@@ -1,19 +1,30 @@
 const LISTENPORT = 8080;
+
+// local test
+// const STOREPORT = 8081;
+// const STOREIP = '127.0.0.1';
+
+// docker test
+const STOREIP = '127.18.0.3';
 const STOREPORT = 8080;
-const STOREIP = '172.18.0.3';//'172.18.0.3';
-const PORT = 6379;
 var express = require('express'),
 	app = express(),
     http = require('http'),
     redis = require('redis'),
     querystring = require('querystring');
 
-var redis_client =  redis.createClient(PORT);
+var redis_client =  redis.createClient('6379', 'redis');
+
+// localtest
+// var redis_client =  redis.createClient('6379');
+
 redis_client.on('connect', function() {
     console.log('Redis connected');
 });
 
-
+app.get('/', function(req, res){
+    res.end('String aaaaa!');
+});
 
 // When directory uploads a picture to Store,
 // Store sends Cache /pId/vId/offset/datalength
@@ -32,7 +43,9 @@ app.post('/:pId/:vId/:offset/:datalength', function (req, res) {
 	});
 
 });
-
+app.get('/', function (req, res) {
+    res.end('send a string');
+});
 
 // Directory requests a photo from Cache /mId/vId/pId
 app.get('/:mId/:vId/:pId', function (req, responseToDir) {
@@ -54,31 +67,27 @@ app.get('/:mId/:vId/:pId', function (req, responseToDir) {
                     
                     // Build the post metadata from an object
                     // Send this metadata to Store
-                    var postData = querystring.stringify({
-                         'vid': '' + metadata.vId,
-                         'offset': '' + metadata.offset,
-                         'datalength': '' + metadata.datalength
-                    });
+                    var postData = metadata.vId + '/' + metadata.offset + '/' + metadata.datalength;
                     console.log('Cache sends Store metadata: ' + postData);
 
                     
                     var post_options = {
                         host: STOREIP,
                         port: STOREPORT,
-                        path: '/' + postData.vId + '/' + postData.offset + '/' + postData.datalength,
+                        path: '/download/' + postData,
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Content-Type': 'text/plain',
                             'Content-Length': Buffer.byteLength(postData)
                         }
                     };
 
                     // Set up the request
                     var post_req = http.request(post_options, function(resFromStore) {
-                        resFromStore.setEncoding('utf8');
-                        var body = new Stream();
+                       // resFromStore.setEncoding('utf8');
+                        var body = '';
                         resFromStore.on('data', function (chunk) {
-                            body.push(chunk);
+                            body += chunk;
                         });
                         resFromStore.on('end', function () {
                             console.log('No more data in response.');
@@ -110,6 +119,8 @@ app.delete('/:mId/:vId/:pId', function (req, res) {
 	});
 });
 
-http.createServer(app).listen(LISTENPORT, function() {
-  console.log('Listening on port ' + LISTENPORT);
+var server = app.listen(LISTENPORT, function(){
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log('Server listening at http://%s:%s', host, port);
 });

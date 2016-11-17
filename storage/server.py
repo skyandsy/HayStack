@@ -8,15 +8,6 @@ class   PostHandler(BaseHTTPRequestHandler):
     def load_binary(file):
         with open(file, 'rb') as file:
             return file.read()
-	
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write("<html><head><title>WoW</title></head>")
-        self.wfile.write("<body><p>This is a Total Wowness</p>")
-        self.wfile.write("</body></html>")
-        return 
 
     def do_POST(self):
         path=self.path.split('/')
