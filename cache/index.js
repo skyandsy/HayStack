@@ -1,26 +1,30 @@
 const LISTENPORT = 8080;
 
 // local test
-const STOREPORT = 8081;
-const STOREIP = '127.0.0.1';
+// const STOREPORT = 8081;
+// const STOREIP = '127.0.0.1';
 
 // docker test
-// const STOREIP = '127.18.0.3';
-// const STOREPORT = 8080;
+const STOREIP = '127.18.0.3';
+const STOREPORT = 8080;
 var express = require('express'),
 	app = express(),
     http = require('http'),
     redis = require('redis'),
     querystring = require('querystring');
 
-// var redis_client =  redis.createClient('6379', 'redis');
+var redis_client =  redis.createClient('6379', 'redis');
 
-var redis_client =  redis.createClient('6379');
+// localtest
+// var redis_client =  redis.createClient('6379');
+
 redis_client.on('connect', function() {
     console.log('Redis connected');
 });
 
-
+app.get('/', function(req, res){
+    res.end('String aaaaa!');
+});
 
 // When directory uploads a picture to Store,
 // Store sends Cache /pId/vId/offset/datalength
@@ -39,7 +43,9 @@ app.post('/:pId/:vId/:offset/:datalength', function (req, res) {
 	});
 
 });
-
+app.get('/', function (req, res) {
+    res.end('send a string');
+});
 
 // Directory requests a photo from Cache /mId/vId/pId
 app.get('/:mId/:vId/:pId', function (req, responseToDir) {
@@ -113,6 +119,8 @@ app.delete('/:mId/:vId/:pId', function (req, res) {
 	});
 });
 
-http.createServer(app).listen(LISTENPORT, function() {
-  console.log('Listening on port ' + LISTENPORT);
+var server = app.listen(LISTENPORT, function(){
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log('Server listening at http://%s:%s', host, port);
 });
