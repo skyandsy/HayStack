@@ -1,11 +1,4 @@
 const LISTENPORT = 8080;
-
-// local test
-// const STOREPORT = 8081;
-// const STOREIP = '127.0.0.1';
-
-// docker test
-const STOREIP = '172.18.0.13';
 const STOREPORT = 8080;
 var express = require('express'),
 	app = express(),
@@ -72,7 +65,7 @@ app.get('/:mId/:vId/:pId', function (req, responseToDir) {
 
                     
                     var post_options = {
-                        host: STOREIP,
+                        host: mId,
                         port: STOREPORT,
                         path: '/download/' + postData,
                         method: 'POST',

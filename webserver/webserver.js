@@ -12,7 +12,8 @@ const REDISPORT = 8080;
 const STOREPORT = 8080;
 const CASSANDRAPORT = 9042;
 const CASSANDRAIP = '127.0.0.1';
-const STOREIP = '172.18.0.13';
+const STOREIPONE = '172.18.0.13';
+const STOREIPTWO = '172.18.0.15';
 const REDISIP = '172.18.0.12';
 const VOLSIZE = 1048576;
 
@@ -71,24 +72,39 @@ setTimeout(function(){
 // Create mapping table: logical volume <-> physical volume
 console.log('Creating logical volume <-> physical volume...');
 var entry = new models.instance.Volmap({
-	logVol : 1, phyVol : STOREIP, empSize : VOLSIZE
+	logVol : 1, phyVol : STOREIPONE, empSize : VOLSIZE
 });
 entry.save(function(err){
 	if (err) console.log(err.message);
 	else console.log('Insert to Volmap: logVol:1, phyVol:%s, empSize:%s', 
-		STOREIP, VOLSIZE);
+		STOREIPONE, VOLSIZE);
 });
 var entry = new models.instance.Volmap({
-        logVol : 2, phyVol : STOREIP, empSize : VOLSIZE
+        logVol : 2, phyVol : STOREIPONE, empSize : VOLSIZE
 });
 entry.save(function(err){
         if (err) console.log(err.message);
         else console.log('Insert to Volmap: logVol:2, phyVol:%s, empSize:%s',
-		STOREIP, VOLSIZE);
+		STOREIPONE, VOLSIZE);
+});
+var entry = new models.instance.Volmap({
+	logVol : 3, phyVol : STOREIPTWO, empSize : VOLSIZE
+});
+entry.save(function(err){
+	if (err) console.log(err.message);
+	else console.log('Insert to Volmap: logVol:3, phyVol:%s, empSize:%s', 
+		STOREIPTWO, VOLSIZE);
+});
+var entry = new models.instance.Volmap({
+        logVol : 4, phyVol : STOREIPTWO, empSize : VOLSIZE
+});
+entry.save(function(err){
+        if (err) console.log(err.message);
+        else console.log('Insert to Volmap: logVol:4, phyVol:%s, empSize:%s',
+		STOREIPTWO, VOLSIZE);
 });
 console.log('Finishing cassandra table initializatoin...');
 }, 10000);
-
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: false}));
@@ -106,7 +122,6 @@ app.get('/index.htm', function(req, res){
 // Request to show a picture by picture name
 app.get('/pic_show', function(req, res){
 	console.log('Getting a picture...');
-	console.log(req);
 
 	var pname = req.query.pic_name;
 	var pid = crypto.createHash('md5').update(req.query.pic_name).digest('hex');
@@ -131,7 +146,7 @@ app.get('/pic_show', function(req, res){
 					port: REDISPORT,
 					hostname: REDISIP,
 					method: 'GET',
-					path: '/1/'+pic.logVol+'/'+pid
+					path: '/'+vol.phyVol+'/'+pic.logVol+'/'+pid
 				};
 
 				var getReq = http.request(options, function(response){
@@ -166,8 +181,7 @@ app.get('/pic_show', function(req, res){
 
 // Request to delete a picture by picture name
 app.get('/pic_delete', function(req, res){
-	console.log('Deleting a picture');
-	console.log(req);
+        console.log('Deleting a picture');
         console.log('Get logical volume id...');
 
         var pid = crypto.createHash('md5').update(req.query.pic_name).digest('hex');
@@ -197,7 +211,7 @@ app.get('/pic_delete', function(req, res){
                                         port: REDISPORT,
                                         hostname: REDISIP,
                                         method: 'DELETE',
-                                        path: '/:1/:'+pic.logVol+'/:'+pid
+                                        path: '/'+vol.phyVol+'/'+pic.logVol+'/'+pid
                                 };
 
                                 var deleteReq = http.request(options, function(response){
@@ -225,14 +239,18 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 	var pid = crypto.createHash('md5').update(req.file.originalname).digest('hex');
 
 	console.log('Finding a writen-enable volume...');
-	models.instance.Volmap.findOne({empSize: {'$gte': req.file.size}},
-		{allow_filtering: true}, function(err, vol){
+	models.instance.Volmap.find({empSize: {'$gte': req.file.size}},
+		{allow_filtering: true}, function(err, vols){
 		if (err) throw err;
 
-		if (vol == 'undefined'){
+		var len = vols.length;
+
+		if (len < 1){
 			console.log('Stores are full!');
 			res.end('Stores are full!');
 		} else {
+			var randomInt = Math.floor(Math.random()*len);
+			var vol = vols[randomInt];
 
 			console.log('Store picture to volume %s.', vol.logVol);
 
@@ -250,10 +268,10 @@ app.post('/pic_upload', upload.single('pic_name'), function(req, res){
 					pid, vol.logVol);
 			});
 
-			console.log('Uploading picture to cache...')	
+			console.log('Uploading picture to storage...')	
 			var postData = fs.readFileSync('tmp/'+req.file.filename, {encoding: 'base64'});
 			var options = {
-				host: STOREIP,
+				host: vol.phyVol,
 				port: STOREPORT,
 				method: 'POST',
 				path: '/upload/'+pid+'/'+vol.logVol,
